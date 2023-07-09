@@ -1,4 +1,8 @@
 use clap::{Args, Parser, Subcommand};
+use common::Dice;
+
+pub mod character;
+pub mod common;
 
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
@@ -36,6 +40,12 @@ struct AddArgs {
 
 fn main() {
     let cli = Cli::parse();
+
+    let dice = Dice { sides: 6 };
+
+    let roll_result = dice.roll(1);
+
+    println!("{}", roll_result.to_string());
 
     // You can check for the existence of subcommands, and if found use their
     // matches just as you would the top level cmd
