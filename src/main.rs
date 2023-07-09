@@ -27,10 +27,10 @@ enum MathCommands {
 
 #[derive(Debug, Args)]
 struct AddArgs {
-    #[arg(short, long)]
+    #[arg(short, long, allow_hyphen_values = true)]
     x: i32,
 
-    #[arg(short, long)]
+    #[arg(short, long, allow_hyphen_values = true)]
     y: i32,
 }
 
