@@ -1,8 +1,14 @@
+use std::error::Error;
+
 use clap::{Args, Parser, Subcommand};
 use common::Dice;
 
+use crate::db::insert_character;
+use character::Character;
+
 pub mod character;
 pub mod common;
+pub mod db;
 
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
@@ -14,50 +20,69 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
-    /// Adds files to myapp
-    Math(MathArgs),
+    Character(CharacterArgs),
+    Roll(RollArgs),
 }
 
 #[derive(Debug, Args)]
-struct MathArgs {
+struct RollArgs {
+    #[arg(short, long)]
+    sides: u8,
+    #[arg(short, long)]
+    times: u8,
+}
+
+#[derive(Debug, Args)]
+struct CharacterArgs {
     #[command(subcommand)]
-    command: MathCommands,
+    command: CharacterCommands,
 }
 
 #[derive(Debug, Subcommand)]
-enum MathCommands {
-    Add(AddArgs),
+enum CharacterCommands {
+    Create(CharacterCreateArgs),
 }
 
 #[derive(Debug, Args)]
-struct AddArgs {
-    #[arg(short, long, allow_hyphen_values = true)]
-    x: i32,
-
-    #[arg(short, long, allow_hyphen_values = true)]
-    y: i32,
+struct CharacterCreateArgs {
+    #[arg(short, long)]
+    name: String,
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     let cli = Cli::parse();
 
-    let dice = Dice { sides: 6 };
+    let mut conn = db::create_connection("data.db".to_string())?;
 
-    let roll_result = dice.roll(1);
-
-    println!("{}", roll_result.to_string());
+    db::create_tables(&mut conn)?;
 
     // You can check for the existence of subcommands, and if found use their
     // matches just as you would the top level cmd
     match &cli.command {
-        Commands::Math(math) => {
-            let math_cmd = &math.command;
+        Commands::Character(character) => {
+            let character_cmd = &character.command;
 
-            match math_cmd {
-                MathCommands::Add(args) => {
-                    println!("{} + {} = {}", args.x, args.y, args.x + args.y);
+            match character_cmd {
+                CharacterCommands::Create(character_create_args) => {
+                    insert_character(
+                        &mut conn,
+                        Character {
+                            name: character_create_args.name.to_string(),
+                        },
+                    )?;
                 }
             }
         }
+        Commands::Roll(roll_args) => {
+            let dice = Dice {
+                sides: roll_args.sides,
+            };
+
+            let roll_result = dice.roll(roll_args.times);
+
+            println!("{}", roll_result.to_string())
+        }
     }
+
+    Ok(())
 }
